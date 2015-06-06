@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 executable PortfolioAPI
   main-is:             server.hs
-  -- other-modules:       
+  other-modules:       Models
   -- other-extensions:    
   build-depends:       aeson >= 0.8
                      , base >=4.7 && <4.8
