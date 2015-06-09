@@ -2,10 +2,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
+module Server (app) where
 import Control.Monad.Trans.Either
 import Data.List
 import Network.Wai
-import Network.Wai.Handler.Warp
 import Servant
 import Data.Text
 import Models
@@ -13,8 +13,8 @@ import Models
 type Name = Text
 
 type PortfolioAPI =
-  "presentation" :> ReqBody '[JSON] Name :> ReqBody '[JSON] [Annotation] :> Post '[JSON] Presentation
-  :<|> "presentation" :> Capture "presentationID" Integer :> Get '[JSON] Presentation
+  "presentations" :> ReqBody '[JSON] Name :> ReqBody '[JSON] [Annotation] :> Post '[JSON] Presentation
+  :<|> "presentations" :> Capture "presentationID" Integer :> Get '[JSON] Presentation
 
 
 
@@ -47,9 +47,7 @@ server = create :<|> show
         create name annotations = return Presentation {name = name, annotations = annotations}
 
         show :: Integer -> EitherT ServantErr IO Presentation
-        show id = return presentation
+        show presentationId = return presentation
 
 app :: Application
 app = serve api server
-
-main = run 8080 app
