@@ -1,31 +1,46 @@
-
-{-# LANGUAGE DeriveGeneric #-}
-module Models (File(..), Annotation(..), Presentation(..)) where
-import Data.Aeson
+{-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE DeriveGeneric              #-}
+module Models                      (File(..), Annotation(..), Presentation(..), doMigrations, runDb) where
 import GHC.Generics
+import Control.Monad.Reader        (ReaderT, asks, liftIO)
 import Data.Text
+import Database.Persist.Postgresql (SqlBackend(..), runMigration,
+                                    runSqlPool)
+import Database.Persist.TH         (share, mkPersist, sqlSettings,
+                                    mkMigrate, persistLowerCase)
+import Config
 
-data File = File
- { path     :: Text
- , contents :: Text
- } deriving (Eq, Show, Generic)
+share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+Presentation json
+    annotations
+    name Text
+    deriving Show
+Annotation json
+    lineNumber Int
+    comment Text
+    presentationId PresentationId
+    deriving Show
+File json
+    path Text
+    contents Text
+    annotationId AnnotationId
+    deriving Show
+|]
 
-instance FromJSON File
-instance ToJSON File
+doMigrations :: ReaderT SqlBackend IO ()
+doMigrations = runMigration migrateAll
 
-data Annotation = Annotation
- { file       :: File
- , lineNumber :: Int
- , comment    :: Text
- } deriving (Eq, Show, Generic)
+runDb query = do
+    pool <- asks getPool
+    liftIO $ runSqlPool query pool
 
-instance FromJSON Annotation
-instance ToJSON Annotation
-
-data Presentation = Presentation
- { annotations :: [Annotation]
- , name        :: Text
- } deriving (Eq, Show, Generic)
-
-instance FromJSON Presentation
-instance ToJSON Presentation

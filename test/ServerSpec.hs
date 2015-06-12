@@ -5,8 +5,16 @@ import Test.Hspec.Wai
 import Test.Hspec.Wai.JSON
 import Network.Wai
 import Server
+import Config
+ioApp :: IO Application
+ioApp = do
+     config <- presetConfig
+     return $ app config
 spec :: Spec
-spec = with (return app) $
-  describe "GET /presentations/:id" $
+spec = with ioApp $
+  describe "POST /presentations" $
     it "responds" $
-      get "/presentations/1" `shouldRespondWith` 200
+      post "/presentations" "" `shouldRespondWith` 200
+  --describe "GET /presentations/:id" $
+    --it "responds" $
+     -- get "/presentations/1" `shouldRespondWith` 200
