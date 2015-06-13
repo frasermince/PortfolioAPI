@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -13,12 +14,18 @@ import Control.Monad.Reader         (ReaderT, runReaderT, lift)
 import Config                       (Config(..))
 import Database.Persist.Postgresql  (insert, selectList, Entity(..), fromSqlKey, (==.))
 import Data.Int                     (Int64)
+import Data.Aeson
+import GHC.Generics
 
-type Name = Text
+newtype EmptyPresentation = EmptyPresentation {name :: Text}
+    deriving (Generic, Show)
+instance FromJSON EmptyPresentation
+instance ToJSON EmptyPresentation
+
 type AppM = ReaderT Config (EitherT ServantErr IO)
 
 type PortfolioAPI =
-  "presentations" :> ReqBody '[JSON] Name :> Post '[JSON] Int64
+  "presentations" :> ReqBody '[JSON] EmptyPresentation :> Post '[JSON] Int64
   -- :<|> "presentations" :> Capture "presentationID" Integer :> Get '[JSON] Presentation
 
 
@@ -58,9 +65,9 @@ readerToEither cfg = Nat $ \x -> runReaderT x cfg
 
 server :: ServerT PortfolioAPI AppM
 server = create -- :<|> show
-  where create :: Text -> AppM Int64
-        create name = do
-          presentation <- runDb $ insert $ Presentation  name
+  where create :: EmptyPresentation -> AppM Int64
+        create emptyPresentation = do
+          presentation <- runDb $ insert $ Presentation $ name emptyPresentation
           return $ fromSqlKey  presentation
 
         -- show :: Integer -> EitherT ServantErr IO Presentation
